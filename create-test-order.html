@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Test Order</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+        button { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin: 10px 0; }
+        button:hover { background: #2563eb; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d1fae5; color: #065f46; }
+        .error { background: #fef2f2; color: #dc2626; }
+        .info { background: #dbeafe; color: #1e40af; }
+        .order-info { background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Order Slip Test Helper</h1>
+    
+    <div class="order-info">
+        <h3>Current Orders:</h3>
+        <div id="orders-list">Loading...</div>
+    </div>
+    
+    <button onclick="createTestOrder()">Create Test Order</button>
+    <button onclick="clearOrders()">Clear All Orders</button>
+    <button onclick="checkOrders()">Check Orders</button>
+    
+    <div id="status"></div>
+    
+    <div class="order-info">
+        <h3>Test URLs:</h3>
+        <p>After creating an order, navigate to one of these URLs:</p>
+        <ul>
+            <li><strong>Order Slip:</strong> <code id="order-slip-url">/order-slip/[ORDER_ID]</code></li>
+            <li><strong>Order Detail:</strong> <code id="order-detail-url">/order/[ORDER_ID]</code></li>
+        </ul>
+        <button onclick="goToOrderSlip()">Go to Order Slip</button>
+        <button onclick="goToOrderDetail()">Go to Order Detail</button>
+    </div>
+
+    <script>
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            setTimeout(() => statusDiv.innerHTML = '', 5000);
+        }
+
+        function createTestOrder() {
+            const testOrder = {
+                id: 'test-order-' + Date.now(),
+                date: new Date().toISOString(),
+                status: 'Processing',
+                total: 1299,
+                items: [
+                    {
+                        name: 'Sample Product 1',
+                        price: 599,
+                        quantity: 1,
+                        size: 'M',
+                        color: 'Blue'
+                    },
+                    {
+                        name: 'Sample Product 2',
+                        price: 700,
+                        quantity: 1,
+                        size: 'L',
+                        color: 'Red'
+                    }
+                ]
+            };
+
+            const savedOrders = JSON.parse(localStorage.getItem('bookings') || '[]');
+            savedOrders.push(testOrder);
+            localStorage.setItem('bookings', JSON.stringify(savedOrders));
+            
+            updateOrdersList();
+            updateTestUrls(testOrder.id);
+            showStatus(`Test order created with ID: ${testOrder.id}`, 'success');
+        }
+
+        function clearOrders() {
+            localStorage.removeItem('bookings');
+            updateOrdersList();
+            showStatus('All orders cleared', 'info');
+        }
+
+        function checkOrders() {
+            const orders = JSON.parse(localStorage.getItem('bookings') || '[]');
+            updateOrdersList();
+            if (orders.length > 0) {
+                updateTestUrls(orders[orders.length - 1].id);
+                showStatus(`Found ${orders.length} order(s)`, 'success');
+            } else {
+                showStatus('No orders found', 'error');
+            }
+        }
+
+        function updateOrdersList() {
+            const orders = JSON.parse(localStorage.getItem('bookings') || '[]');
+            const ordersList = document.getElementById('orders-list');
+            
+            if (orders.length === 0) {
+                ordersList.innerHTML = '<p>No orders found</p>';
+            } else {
+                ordersList.innerHTML = orders.map(order => 
+                    `<div style="margin: 10px 0; padding: 10px; background: white; border-radius: 4px;">
+                        <strong>ID:</strong> ${order.id}<br>
+                        <strong>Status:</strong> ${order.status}<br>
+                        <strong>Total:</strong> ₹${order.total}<br>
+                        <strong>Date:</strong> ${new Date(order.date).toLocaleDateString()}
+                    </div>`
+                ).join('');
+            }
+        }
+
+        function updateTestUrls(orderId) {
+            if (orderId) {
+                document.getElementById('order-slip-url').textContent = `/order-slip/${orderId}`;
+                document.getElementById('order-detail-url').textContent = `/order/${orderId}`;
+                window.currentOrderId = orderId;
+            }
+        }
+
+        function goToOrderSlip() {
+            if (window.currentOrderId) {
+                window.location.href = `/order-slip/${window.currentOrderId}`;
+            } else {
+                showStatus('Please create an order first', 'error');
+            }
+        }
+
+        function goToOrderDetail() {
+            if (window.currentOrderId) {
+                window.location.href = `/order/${window.currentOrderId}`;
+            } else {
+                showStatus('Please create an order first', 'error');
+            }
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            checkOrders();
+        };
+    </script>
+</body>
+</html>
